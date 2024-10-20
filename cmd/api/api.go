@@ -23,7 +23,9 @@ func (s *APIServer) Run() {
 	subrouter := router.Group("/api/v1")
 
 	genreRouter := subrouter.Group("/genre")
-	genreHandler := genre.NewHandler()
+
+	genreStore := genre.NewStore(s.db)
+	genreHandler := genre.NewHandler(genreStore)
 	genreHandler.RegisterRoutes(genreRouter)
 
 	router.Run(s.port)
