@@ -93,9 +93,40 @@ func (h *Handler) findGenreByCode(c *gin.Context) {
 }
 
 func (h *Handler) searchGenres(c *gin.Context) {
+	var genrePayload types.GenreSearch
+
+	if err := c.ShouldBindBodyWithJSON(&genrePayload); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+		return
+	}
+
+	_genre, err := h.store.SearchGenres(genrePayload)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, _genre)
 
 }
 
 func (h *Handler) deleteGenres(c *gin.Context) {
+	var deleteGenrePayload types.DeleteGenrepayload
+
+	if err := c.ShouldBindBodyWithJSON(&deleteGenrePayload); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+		return
+	}
+	if len(deleteGenrePayload.Codes) > 0 {
+		err := h.store.DeleteGenres(deleteGenrePayload.Codes)
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "Deleted Successfully"})
+		return
+	}
+	c.IndentedJSON(http.StatusBadRequest, gin.H{"err": "codes are required"})
 
 }
