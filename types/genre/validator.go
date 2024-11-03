@@ -13,7 +13,8 @@ type GenreStore interface {
 	FindGenreByCode(string) (*Genre, error)
 	UpdateGenre(string, Genre) (*Genre, error)
 	DeleteGenres([]string) error
-	SearchGenres(GenreSearch) ([]Genre, error)
+	SearchGenres(GenreSearch, int, int) ([]Genre, error)
+	CountGenres(GenreSearch) (int, error)
 }
 
 type CreateGenrePayload struct {
@@ -30,8 +31,17 @@ type GenreSearch struct {
 	Filters   map[string]string `json:"filters"`
 	SortField string            `json:"sortField"`
 	SortOrder string            `json:"sortOrder"`
+	Limit     int               `json:"limit"`
+	Page      int               `json:"page"`
 }
 
 type DeleteGenrepayload struct {
 	Codes []string `json:"codes"`
+}
+
+type GenreSearchResponse struct {
+	Total int     `json:"total"`
+	Limit int     `json:"limit"`
+	Page  int     `json:"page"`
+	Data  []Genre `json:"data,omitempty"`
 }

@@ -1,6 +1,7 @@
 package genre
 
 import (
+	"math"
 	"net/http"
 
 	types "github.com/RokayaEG/golang-library-service/types/genre"
@@ -100,14 +101,55 @@ func (h *Handler) searchGenres(c *gin.Context) {
 		return
 	}
 
-	_genre, err := h.store.SearchGenres(genrePayload)
+	limit := 10
+	page := 1
+
+	if genrePayload.Limit > 0 {
+		limit = genrePayload.Limit
+	}
+
+	if genrePayload.Page > 0 {
+		page = genrePayload.Page
+	}
+
+	offset := (page - 1) * limit
+
+	total, err := h.store.CountGenres(genrePayload)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, _genre)
+	if offset > total {
+		offset = 0
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+	if page > totalPages {
+		page = 1
+	}
+
+	_genre, err := h.store.SearchGenres(genrePayload, limit, offset)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+		return
+	}
+
+	if len(_genre) == 0 {
+		_genre = []types.Genre{}
+	}
+
+	result := types.GenreSearchResponse{
+		Total: total,
+		Data:  _genre,
+		Page:  page,
+		Limit: limit,
+	}
+
+	c.IndentedJSON(http.StatusOK, result)
 
 }
 

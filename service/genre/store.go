@@ -3,6 +3,7 @@ package genre
 import (
 	"database/sql"
 	"errors"
+	"strconv"
 	"strings"
 
 	types "github.com/RokayaEG/golang-library-service/types/genre"
@@ -72,7 +73,36 @@ func (s *Store) UpdateGenre(code string, updatedGenre types.Genre) (*types.Genre
 	return s.FindGenreByCode(code)
 }
 
-func (s *Store) SearchGenres(srch types.GenreSearch) ([]types.Genre, error) {
+func (s *Store) CountGenres(srch types.GenreSearch) (int, error) {
+
+	var searchClause string
+	if srch.Filters != nil {
+		for key, value := range srch.Filters {
+			if len(value) > 0 {
+				switch key {
+				case "search":
+					searchClause += "g.code LIKE '%" + value + "%' OR g.name LIKE '%" + value + "%' OR g.slug LIKE '%" + value + "%'"
+				default:
+				}
+			}
+		}
+	}
+	var selectClause string
+	if len(searchClause) > 0 {
+		selectClause += "\nWHERE " + searchClause
+	}
+
+	var count []int
+	err := s.db.Select(&count, "SELECT COUNT(g.id) FROM genres AS g"+selectClause+";")
+
+	if err != nil {
+		return 0, err
+	}
+	test := count[0]
+	return test, nil
+}
+
+func (s *Store) SearchGenres(srch types.GenreSearch, limit int, offset int) ([]types.Genre, error) {
 
 	var searchClause string
 	if srch.Filters != nil {
@@ -101,8 +131,10 @@ func (s *Store) SearchGenres(srch types.GenreSearch) ([]types.Genre, error) {
 		}
 	}
 
+	limitClause := "\nLIMIT " + strconv.Itoa(offset) + "," + strconv.Itoa(limit)
+
 	var genres []types.Genre
-	err := s.db.Select(&genres, "SELECT * FROM genres AS g"+selectClause+orderClause+";")
+	err := s.db.Select(&genres, "SELECT * FROM genres AS g"+selectClause+orderClause+limitClause+";")
 
 	if err != nil {
 		return nil, err
